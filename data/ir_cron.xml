@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- CRON pour l'envoi automatique des produits Blev -->
+    <record id="ir_cron_auto_send_products" model="ir.cron">
+        <field name="name">Envoi automatique des produits Blev</field>
+        <field name="model_id" ref="module_HpharmaESLSystem.model_esl_esl"/>
+        <field name="state">code</field>
+        <field name="code">model.auto_send_products()</field>
+        <field name="interval_number">1</field> <!-- Valeur par défaut -->
+        <field name="interval_type">hours</field> <!-- minutes / hours / days -->
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

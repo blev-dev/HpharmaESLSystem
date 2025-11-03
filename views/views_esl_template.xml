@@ -1,0 +1,90 @@
+<odoo>
+    <!-- Action -->
+    <record id="action_esl_templates" model="ir.actions.act_window">
+        <field name="name">ESL Templates</field>
+        <field name="res_model">esl.template</field>
+        <field name="view_mode">kanban,form</field>
+        <field name="help" type="html">
+            <p>Gérez ici les templates ESL disponibles.</p>
+        </field>
+    </record>
+
+    <!-- Formulaire ESL Template -->
+    <record id="view_esl_template_form" model="ir.ui.view">
+        <field name="name">esl.template.form</field>
+        <field name="model">esl.template</field>
+        <field name="arch" type="xml">
+            <form string="Template ESL" create="false" edit="true">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="esl_id" readonly="1"/>
+                            <field name="template_number" readonly="1"/>
+                            <field name="name" readonly="1"/>
+                            <field name="is_enable" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="size" readonly="1"/>
+                            <field name="resolution" readonly="1"/>
+                            <field name="hardware_str" readonly="1"/>
+                            <field name="item_num" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Image du Template">
+                        <field name="full_pic_url" readonly="1" widget="image_url"/>
+                    </group>
+
+                    <group string="Codes-barres produits">
+                        <field name="product_codes" readonly="1"/>
+                    </group>
+                    
+                    <group string="Scan produit">
+                        <field name="scan_input"/>
+                        <button string="Ajouter" type="object" name="action_add_scan" class="btn-primary"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue Kanban -->
+    <record id="view_esl_template_kanban" model="ir.ui.view">
+        <field name="name">esl.template.kanban</field>
+        <field name="model">esl.template</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_small_column o_esl_template_kanban" create="false" edit="true">
+                <field name="name"/>
+                <field name="esl_id"/>
+                <field name="item_num"/>
+                <field name="is_enable"/>
+                <field name="size"/>
+                <field name="full_pic_url"/>
+
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click o_kanban_record">
+                            <div class="o_kanban_details" style="text-align:center;">
+                                <div class="o_kanban_primary">
+                                    <strong><span t-esc="record.name.value"/></strong>
+                                </div>
+
+                                <div style="margin:10px 0;">
+                                    <img t-att-src="record.full_pic_url.value"
+                                         width="180" height="auto"
+                                         style="border-radius:8px; border:1px solid #000000ff;"/>
+                                </div>
+
+                                <div class="o_kanban_secondary" style="text-align:left;">
+                                    <div><b>ESL ID :</b> <span t-esc="record.esl_id.value"/></div>
+                                    <div><b>Produits :</b> <span t-esc="record.item_num.value"/></div>
+                                    <div><b>Taille :</b> <span t-esc="record.size.value"/></div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,61 @@
+<odoo>
+    <record id="esl_esl_view_list" model="ir.ui.view">
+        <field name="name">ESL list view</field>
+        <field name="model">esl.esl</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" edit="true">
+                <field name="login"/>
+                <field name="password" password="True"/>
+                <field name="state" widget="badge"
+                    options="{'class': {'connected': 'bg-success text-white',
+                                        'disconnected': 'bg-danger text-white',
+                                        'error': 'bg-warning text-dark'}}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="esl_esl_view_form" model="ir.ui.view">
+        <field name="name">ESL form view</field>
+        <field name="model">esl.esl</field>
+        <field name="arch" type="xml">
+            <form create="false" delete="false" edit="true">
+                <header>
+                    <button type="object" name="FirstConnectionESL" string="Connect to Hpharma ESL and import" class="oe_highlight"/>
+                    <field name="state" widget="badge"
+                        options="{'class': {'connected': 'bg-success text-white',
+                                            'disconnected': 'bg-danger text-white',
+                                            'error': 'bg-warning text-dark'}}"/>
+                </header>
+                <sheet>
+                    <group string="Identifiant ESL">
+                        <field name="login"/>
+                        <field name="password" password="True"/>
+                        <field name="doi"/>
+                        <field name="labeltype"/>
+                        <field name="StoreId"/>
+                        <button type="object" name="getstoreid" string="retrieve store id" class="oe_highlight"/>
+                        <button name="sync_templates_from_esl" type="object" string="Sync Templates" class="btn-success"/>
+                    </group>
+                    <group string="Identifiant Unique">
+                        <field name="unique_id"/>
+                        <button type="object" name="importesl" string="import all products" class="oe_highlight"/>
+                    </group>
+                    <group string="Planification import automatique">
+                        <field name="cron_active"/>
+                        <field name="interval_number"/>
+                        <field name="interval_type"/>
+                        <field name="product_batch"/>
+                        <button name="action_update_cron" type="object" string="Enregistrer planification" class="btn-primary"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="esl_esl_action" model="ir.actions.act_window">
+        <field name="name">Paramètres ESL</field>
+        <field name="res_model">esl.esl</field>
+        <field name="view_mode">list,form</field>
+        <field name="target">current</field>
+    </record>
+</odoo>

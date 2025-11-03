@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- ===================== -->
+    <!-- ✅ Formulaire Bind ESL -->
+    <!-- ===================== -->
+    <record id="esl_bind_view_form" model="ir.ui.view">
+        <field name="name">ESL Bind Form</field>
+        <field name="model">esl.bind</field>
+        <field name="arch" type="xml">
+            <form string="Bind ESL" create="false" delete="false" edit="false" header="False" options="{'no_open': True}">
+                <sheet>
+                    <group>
+                        <field name="code_1" placeholder="Entrer le produit"/>
+                        <field name="product_name" readonly="1"/>
+                        <field name="product_image" widget="image" readonly="1" options='{"preview_image": 50}'/>
+                        <field name="code_2" placeholder="Entrer le ESL"/>
+                    </group>
+                    <group>
+                        <button name="action_bind" type="object" string="Bind" class="btn-primary"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action Bind ESL -->
+    <record id="esl_bind_action" model="ir.actions.act_window">
+        <field name="name">Bind ESL</field>
+        <field name="res_model">esl.bind</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="esl_bind_view_form"/>
+        <field name="target">current</field>
+    </record>
+
+
+    <!-- ======================= -->
+    <!-- ✅ Formulaire Unbind ESL -->
+    <!-- ======================= -->
+    <record id="esl_unbind_view_form" model="ir.ui.view">
+        <field name="name">ESL Unbind Form</field>
+        <field name="model">esl.unbind</field>
+        <field name="arch" type="xml">
+            <form string="Unbind ESL" create="false" delete="false" edit="false" header="False" options="{'no_open': True}">
+                <sheet>
+                    <group>
+                        <field name="code_1" placeholder="Entrer le code à Unbind"/>
+                    </group>
+                    <group>
+                        <button name="action_unbind" type="object" string="Unbind" class="btn-danger"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action Unbind ESL -->
+    <record id="esl_unbind_action" model="ir.actions.act_window">
+        <field name="name">Unbind ESL</field>
+        <field name="res_model">esl.unbind</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="esl_unbind_view_form"/>
+        <field name="target">current</field>
+    </record>
+</odoo>

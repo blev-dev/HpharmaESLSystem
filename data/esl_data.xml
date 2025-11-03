@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Création automatique d’un enregistrement ESL à l’installation -->
+    <record id="default_esl_config" model="esl.esl">
+        <field name="login"></field>
+        <field name="password"></field>
+        <field name="url_sendItem">https://blev29.kalanda.info/api-esl/sendItems</field>
+        <field name="unique_id"></field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">hours</field>
+        <field name="cron_active">True</field>
+        <field name="product_batch">19999</field>
+        <field name="state">disconnected</field>
+        <field name="doi" eval="False"/>
+    </record>
+</odoo>
+

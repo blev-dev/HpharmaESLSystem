@@ -1,0 +1,35 @@
+<odoo>
+    <!-- Menu racine ESL affiché comme une application -->
+    <menuitem id="esl_esl_root_menu"
+              name="Hpharma ESL System"
+              sequence="9"
+              action="esl_esl_action"
+              web_icon="module_HpharmaESLSystem,static/description/icon.png"/>
+
+    <!-- Sous-menus -->
+    <menuitem id="esl_bind_menu"
+              name="Bind"
+              parent="esl_esl_root_menu"
+              action="esl_bind_action"
+              sequence="10"/>
+
+    <menuitem id="esl_unbind_menu"
+              name="Unbind"
+              parent="esl_esl_root_menu"
+              action="esl_unbind_action"
+              sequence="20"/>
+
+
+    <!-- Nouveau menu Templates ESL -->
+    <menuitem id="esl_templates_root"
+              name="Template Multi bind"
+              parent="esl_esl_root_menu"
+              action="action_esl_templates"
+              sequence="30"/>
+
+    <menuitem id="esl_param_menu"
+              name="Paramètres Hpharma ESL"
+              parent="esl_esl_root_menu"
+              action="esl_esl_action"
+              sequence="50"/>
+</odoo>
