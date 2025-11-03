@@ -4,9 +4,9 @@ from odoo.exceptions import ValidationError
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
-# -------------------------
-# Cache global des stores
-# -------------------------
+# --------------------------
+# Cache global des stores test git
+# --------------------------
 _cached_stores_global = []
 
 class Esl(models.Model):
