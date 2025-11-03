@@ -16,7 +16,7 @@
     'author': "B.L.E.V. Sàrl",
     'license': 'OPL-1',
     'version': '18.0.1.2',
-    'category': 'Warehouse/Inventory',
+    'category': 'Warehouse/Inventory, Sales/Point of Sale',
     'depends': ['base','product','stock','sale_management'],
     'data' : [
         "security/ir.model.access.csv",
