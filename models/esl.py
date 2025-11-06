@@ -138,7 +138,7 @@ class Esl(models.Model):
                 "attrCategory": "default",
                 "attrName": "default",
                 "barCode": barcode_value,
-                "itemTitle": p.display_name or "",
+                "itemTitle": p.name or "",
                 "shortTitle": "",
                 "classLevel": "",
                 "originalPrice": self.format_price(p.list_price),
@@ -249,8 +249,7 @@ class Esl(models.Model):
             return self._notify(f"❌ Erreur PostConnexion : {str(e)}")
 
         self.state = "connected"
-        self._notify("✅ Connexion ESL Hpharma réussie.")
-        return {'type': 'ir.actions.client', 'tag': 'reload'}
+        return self._notify("✅ Connexion ESL Hpharma réussie.")
 
     # -------------------------------------------------------------
     #                  ENVOI DES PRODUITS
@@ -278,14 +277,15 @@ class Esl(models.Model):
         for i in range(0, len(all_items), batch_size):
             batch_items = all_items[i:i + batch_size]
 
-            payload = json.dumps({
+            payload_dict = {
                 "uniqueId": self.unique_id,
                 "agencyId": self.agency_id,
                 "merchantId": self.merchant_id,
                 "itemList": batch_items,
                 "zk": self.zk_token,
                 "token": self.token
-            })
+            }
+            payload = json.dumps(payload_dict)
 
             headers = {
                 'ZKAuthorization': self.zk_token,
@@ -318,11 +318,10 @@ class Esl(models.Model):
             total_sent += len(batch_items)
 
             # 🔒 Masquer les tokens si ajout au log
-            safe_payload = payload.copy()
-            safe_payload["token"] = "****"
-            safe_payload["zk"] = "****"
-
-            logs.append(json.dumps(json.loads(safe_payload), indent=4, ensure_ascii=False))
+            safe_payload_dict = dict(payload_dict)
+            safe_payload_dict["token"] = "****"
+            safe_payload_dict["zk"] = "****"
+            logs.append(json.dumps(safe_payload_dict, indent=4, ensure_ascii=False))
 
         return self._notify(
             f"✅ Produits envoyés : {total_sent}\n"
@@ -413,7 +412,7 @@ class Esl(models.Model):
             'params': {
                 'title': 'ESL',
                 'message': message,
-                'sticky': False,
+                'sticky': True,
                 'timeout': 10000, 
             }
         }
@@ -466,7 +465,7 @@ class Esl(models.Model):
             "uniqueId": self.unique_id,
             "agencyId": self.agency_id,
             "merchantId": self.merchant_id,
-            "data": {"storeId": self.StoreId}
+            "data": {"storeId": self.StoreId, "HardwareType": 3}
         }
         headers = {
             "ZKAuthorization": self.zk_token or "",
@@ -485,13 +484,31 @@ class Esl(models.Model):
         except Exception as e:
             return self._notify(f"❌ Erreur requête templates: {e}")
 
+
         try:
             data = resp.json()
         except Exception as e:
             return self._notify(f"❌ Réponse templates non JSON: {e}")
 
-        content = data.get("data", {}).get("content", []) or []
+        # Correction: gérer le cas où la réponse est une liste ou un dict, avec log
+        logs = []
+        logs.append(f"Type de data reçu: {type(data)}")
+        if isinstance(data, list):
+            content = data
+        elif isinstance(data, dict):
+            # data peut être directement la liste de templates ou un dict avec 'data' ou 'content'
+            if "content" in data:
+                content = data.get("content", [])
+            elif "data" in data and isinstance(data["data"], list):
+                content = data["data"]
+            elif "data" in data and isinstance(data["data"], dict):
+                content = data["data"].get("content", [])
+            else:
+                content = []
+        else:
+            content = []
         if not content:
+            logs.append(f"Contenu vide ou non trouvé. data: {data}")
             return self._notify("⚠️ Pas de template reçu.")
 
         Template = self.env['esl.template'].sudo()
@@ -520,6 +537,13 @@ class Esl(models.Model):
             }
 
             existing = Template.search([("esl_id", "=", esl_id)], limit=1)
+            if not is_enable_value:
+                # Si désactivé, supprimer si existe
+                if existing:
+                    existing.unlink()
+                    updated += 1
+                continue
+            # Si activé, créer ou mettre à jour
             if existing:
                 existing.write(vals)
                 updated += 1
@@ -535,6 +559,7 @@ class Esl(models.Model):
                 record.connectesl()
                 record.getstoreid()
                 record.sync_templates_from_esl()
+                return { 'type': 'ir.actions.client', 'tag': 'reload',}
             except Exception as e:
                 record.state = "error"
                 record._notify(f"Erreur Connexion : {str(e)}")

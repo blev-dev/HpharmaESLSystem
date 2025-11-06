@@ -20,25 +20,26 @@
         <field name="arch" type="xml">
             <form create="false" delete="false" edit="true">
                 <header>
-                    <button type="object" name="FirstConnectionESL" string="Connect to Hpharma ESL and import" class="oe_highlight"/>
-                    <field name="state" widget="badge"
-                        options="{'class': {'connected': 'bg-success text-white',
-                                            'disconnected': 'bg-danger text-white',
-                                            'error': 'bg-warning text-dark'}}"/>
+                    <button type="object" name="FirstConnectionESL" string="Connect to Hpharma ESL" class="oe_highlight"/>
+                    <field name="state" widget="statusbar"
+                    statusbar_visible="disconnected,connecting,connected"
+                    statusbar_colors="{'connected': 'success', 'error': 'danger'}"/>
                 </header>
                 <sheet>
                     <group string="Identifiant ESL">
                         <field name="login"/>
                         <field name="password" password="True"/>
+                        <field name="unique_id"/>
+                    </group>
+                    <group string="Configuration ESL">
                         <field name="doi"/>
                         <field name="labeltype"/>
                         <field name="StoreId"/>
-                        <button type="object" name="getstoreid" string="retrieve store id" class="oe_highlight"/>
-                        <button name="sync_templates_from_esl" type="object" string="Sync Templates" class="btn-success"/>
                     </group>
-                    <group string="Identifiant Unique">
-                        <field name="unique_id"/>
-                        <button type="object" name="importesl" string="import all products" class="oe_highlight"/>
+                    <group string="Actions Manuelles ESL">
+                        <button type="object" name="importesl" string="import all products" class="btn-info"/>
+                        <button type="object" name="getstoreid" string="retrieve store id" class="oe_highlight"/>
+                        <button type="object" name="sync_templates_from_esl" string="Sync Templates" class="btn-success"/>
                     </group>
                     <group string="Planification import automatique">
                         <field name="cron_active"/>

@@ -50,7 +50,7 @@ class EslBind(models.TransientModel):
         try:
             import http.client
             conn = http.client.HTTPSConnection("blev29.kalanda.info")
-            conn.request("POST", "/api-esl/bindSingleESL", payload, headers)
+            conn.request("POST", "/api-esl/ZK_bindSingleESL", payload, headers)
             res = conn.getresponse()
             response_data = res.read().decode("utf-8")
 
@@ -77,6 +77,7 @@ class EslBind(models.TransientModel):
                 }
             }
         except Exception as e:
+            { 'type': 'ir.actions.client', 'tag': 'reload',}
             return self._notify(str(e))
 
     def _notify(self, message):
@@ -111,7 +112,7 @@ class EslUnbind(models.TransientModel):
 
         try:
             conn = http.client.HTTPSConnection("blev29.kalanda.info")
-            conn.request("POST", "/api-esl/unbindESL", payload, headers)
+            conn.request("POST", "/api-esl/ZK_unbindESL", payload, headers)
             res = conn.getresponse()
             response_data = res.read().decode("utf-8")
 

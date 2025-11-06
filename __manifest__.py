@@ -15,7 +15,7 @@
     """,
     'author': "B.L.E.V. Sàrl",
     'license': 'OPL-1',
-    'version': '18.0.1.3',
+    'version': '18.0.1.4',
     'category': 'Warehouse/Inventory, Sales/Point of Sale',
     'depends': ['base','product','stock','sale_management'],
     'data' : [

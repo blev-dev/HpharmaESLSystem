@@ -4,6 +4,8 @@
     <record id="default_esl_config" model="esl.esl">
         <field name="login"></field>
         <field name="password"></field>
+        <field name="token"></field>
+        <field name="zk_token"></field>
         <field name="url_sendItem">https://blev29.kalanda.info/api-esl/sendItems</field>
         <field name="unique_id"></field>
         <field name="interval_number">1</field>
