@@ -36,7 +36,7 @@
                     </group>
 
                     <group string="Produits scannés">
-                        <field name="Json_product_codes" readonly="1" widget="text"/>
+                        <field name="Json_product_codes" widget="text"/>
                         <field name="product_names_scanned" readonly="1" widget="text"/>
                     </group>
                     <group string="Binding multi produit">
@@ -65,7 +65,7 @@
                 <field name="full_pic_url"/>
 
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div class="oe_kanban_global_click o_kanban_record">
                             <div class="o_kanban_details" style="text-align:center;">
                                 <div class="o_kanban_primary">

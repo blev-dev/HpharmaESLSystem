@@ -33,55 +33,7 @@ class EslTemplate(models.Model):
 
         # Cherche le produit via son code-barres
         product = self.env['product.product'].search([('barcode', '=', self.scan_input)], limit=1)
-        if product:
-            code_barre = product.barcode
-            Json_product_codes = json.loads(self.Json_product_codes or "[]")
-
-            # Vérifie doublon
-            if code_barre in Json_product_codes:
-                return {
-                    'warning': {
-                        'title': "Doublon",
-                        'message': f"Le code-barres {code_barre} est déjà dans la liste.",
-                        'type': 'danger'
-                    }
-                }
-
-            # Remplit la première case vide
-            try:
-                idx = Json_product_codes.index("")
-                Json_product_codes[idx] = code_barre
-                self.Json_product_codes = json.dumps(Json_product_codes)
-                self.scan_input = ""
-            except ValueError:
-                # S'il n'y a plus de case vide, on n'ajoute pas
-                return {
-                    'warning': {
-                        'title': "Liste pleine",
-                        'message': "Tous les emplacements sont déjà remplis.",
-                        'type': 'warning'
-                    }
-                }
-
-            # Met à jour la liste des noms produits scannés
-            names = []
-            for code in Json_product_codes:
-                if code:
-                    prod = self.env['product.product'].search([('barcode', '=', code)], limit=1)
-                    if prod:
-                        names.append(f"{code} - {prod.display_name}")
-                    else:
-                        names.append(f"{code} - [Inconnu]")
-            self.product_names_scanned = '\n'.join(names)
-
-            return {
-                'warning': {
-                    'title': "Scan réussi",
-                    'message': f"Produit trouvé : {product.display_name} ({product.barcode})",
-                    'type': 'success'
-                }
-            }
-        else:
+        if not product:
             return {
                 'warning': {
                     'title': "Avertissement",
@@ -90,25 +42,69 @@ class EslTemplate(models.Model):
                 }
             }
 
+        code_barre = product.barcode
+        codes_list = json.loads(self.Json_product_codes or "[]")
+
+        # Vérifie doublon
+        if code_barre in codes_list:
+            return {
+                'warning': {
+                    'title': "Doublon",
+                    'message': f"Le code-barres {code_barre} est déjà dans la liste.",
+                    'type': 'danger'
+                }
+            }
+
+        # Remplit la première case vide
+        try:
+            idx = codes_list.index("")
+            codes_list[idx] = code_barre
+            self.Json_product_codes = json.dumps(codes_list)
+            self.scan_input = ""
+        except ValueError:
+            return {
+                'warning': {
+                    'title': "Liste pleine",
+                    'message': "Tous les emplacements sont déjà remplis.",
+                    'type': 'warning'
+                }
+            }
+
+        # Met à jour la liste des noms produits scannés
+        names = []
+        for code in codes_list:
+            if code:
+                prod = self.env['product.product'].search([('barcode', '=', code)], limit=1)
+                names.append(f"{code} - {prod.display_name}" if prod else f"{code} - [Inconnu]")
+        self.product_names_scanned = '\n'.join(names)
+        self.env['esl.template'].browse(self.id).write({'Json_product_codes': self.Json_product_codes})
+        return self._notify(
+            f"Scan réussi : {product.display_name} ({product.barcode})\n"
+            f"Etat actuel des codes : {self.Json_product_codes}",
+            notif_type="success"
+        )
+
     @api.onchange('esl_id_scan')
     def _onchange_esl_id_scan(self):
         self.action_multibind()
 
     def action_multibind(self):
-        # Recherche d’une configuration ESL existante
         esl_record = self.env['esl.esl'].search([], limit=1)
         if not esl_record:
-            return self._notify("❌ Aucune instance ESL trouvée.", reload=True)
+            return self._notify("❌ Aucune instance ESL trouvée.", notif_type="warning")
 
-        # Prépare la liste des produits
         try:
             products = json.loads(self.Json_product_codes or "[]")
-            products = [p for p in products if p]
-        except Exception:
-            products = []
+            products = [p.strip() for p in products if p and p.strip()]
+        except Exception as e:
+            return self._notify(f"Erreur parsing Json_product_codes : {str(e)}", notif_type="warning")
 
         if not products:
-            return self._notify("⚠️ Aucun code produit à envoyer.", reload=True)
+            return self._notify(
+                f"⚠️ Aucun code produit à envoyer.\n"
+                f"Contenu actuel de Json_product_codes : {self.product_names_scanned} : {self.Json_product_codes}",
+                notif_type="warning"
+            )
 
         # Construction du payload JSON
         payload = {
@@ -131,25 +127,30 @@ class EslTemplate(models.Model):
             conn.request("POST", "/api-esl/ZK_bindMultiESL", json.dumps(payload), headers)
             res = conn.getresponse()
             response_data = res.read().decode("utf-8")
-
+            self.Json_product_codes = json.dumps([""] * len(products))  # ["", "", ...]
+            self.product_names_scanned = ""
+            self.esl_id_scan = ""
             if res.status != 200:
                 raise Exception(f"Erreur API ({res.status}) : {response_data}")
 
-            # Succès ✅
+            # ✅ Reset des champs après succès
+            self.Json_product_codes = json.dumps([""] * len(products))
+            self.product_names_scanned = ""
+            self.esl_id_scan = ""
+
+            # 🔄 Reload de la page avec notification
             return {
                 'type': 'ir.actions.client',
-                'tag': 'display_notification',
+                'tag': 'reload',  # force le reload du formulaire / vue
                 'params': {
-                    'title': "Succès ✅",
-                    'message': "Produits liés à l'ESL avec succès.",
-                    'type': 'success',
-                    'sticky': False,
+                    'message': f"Produits liés à l'ESL avec succès.\nPayload envoyé : {json.dumps(payload)}",
                 }
             }
 
         except Exception as e:
             msg = f"❌ Erreur : {str(e)}\n\nPayload : {json.dumps(payload, indent=2)}\n\nHeaders : {headers}"
-            return self._notify(msg, reload=True)
+            return self._notify(msg, notif_type="danger")
+
 
     def _notify(self, message):
         return {
@@ -175,19 +176,6 @@ class EslTemplate(models.Model):
         if record.item_num and not record.Json_product_codes:
             record.Json_product_codes = ""
         return record
-
-    def write(self, vals):
-        res = super().write(vals)
-        for record in self:
-            if "item_num" in vals:
-                codes = json.loads(record.Json_product_codes or "[]")
-                diff = record.item_num - len(codes)
-                if diff > 0:
-                    codes.extend([""] * diff)
-                elif diff < 0:
-                    codes = codes[:record.item_num]
-                super(EslTemplate, record).write({'Json_product_codes': json.dumps(codes)})
-        return res
 
     def _notify(self, message, notif_type="info"):
         """

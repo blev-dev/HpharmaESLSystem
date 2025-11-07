@@ -15,8 +15,8 @@
     """,
     'author': "B.L.E.V. Sàrl",
     'license': 'OPL-1',
-    'version': '18.0.1.4',
-    'category': 'Warehouse/Inventory, Sales/Point of Sale',
+    'version': '19.0.1.0',
+    'category': 'Supply Chain/Inventory',
     'depends': ['base','product','stock','sale_management'],
 
     # ✅ Données XML, CSV, etc.
@@ -31,7 +31,7 @@
     ],
 
     # ✅ Hooks
-    "post_init_hook": "clear_esl_templates",
+    #"post_init_hook": "clear_esl_templates",
     "uninstall_hook": "clear_esl_templates",
 
     # ✅ Options du module
