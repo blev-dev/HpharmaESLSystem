@@ -18,6 +18,8 @@
     'version': '18.0.1.4',
     'category': 'Warehouse/Inventory, Sales/Point of Sale',
     'depends': ['base','product','stock','sale_management'],
+
+    # ✅ Données XML, CSV, etc.
     'data' : [
         "security/ir.model.access.csv",
         'data/esl_data.xml',
@@ -27,10 +29,16 @@
         'views/views_menu.xml',
         'data/ir_cron.xml',
     ],
+
+    # ✅ Hooks
     "post_init_hook": "clear_esl_templates",
     "uninstall_hook": "clear_esl_templates",
+
+    # ✅ Options du module
     'installable': True,
     'application': True,
+
+    # ✅ Dépendances externes
     'external_dependencies': {
         'python': ['requests', 'cryptography'],
     },

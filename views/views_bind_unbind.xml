@@ -10,10 +10,10 @@
             <form string="Bind ESL" create="false" delete="false" edit="false" header="False" options="{'no_open': True}">
                 <sheet>
                     <group>
-                        <field name="code_1" placeholder="Entrer le produit"/>
+                         <field name="code_1" placeholder="Entrer le produit"/>
                         <field name="product_name" readonly="1"/>
                         <field name="product_image" widget="image" readonly="1" options='{"preview_image": 50}'/>
-                        <field name="code_2" placeholder="Entrer le ESL"/>
+                        <field name="code_2" placeholder="Code barre de l'étiquette"/>
                     </group>
                     <group>
                         <button name="action_bind" type="object" string="Bind" class="btn-primary"/>

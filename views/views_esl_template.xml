@@ -35,13 +35,16 @@
                         <field name="full_pic_url" readonly="1" widget="image_url"/>
                     </group>
 
-                    <group string="Codes-barres produits">
-                        <field name="product_codes" readonly="1"/>
+                    <group string="Produits scannés">
+                        <field name="Json_product_codes" readonly="1" widget="text"/>
+                        <field name="product_names_scanned" readonly="1" widget="text"/>
                     </group>
-                    
-                    <group string="Scan produit">
-                        <field name="scan_input"/>
-                        <button string="Ajouter" type="object" name="action_add_scan" class="btn-primary"/>
+                    <group string="Binding multi produit">
+                        <field name="scan_input" placeholder="Code barre du produit"/>
+                        <field name="esl_id_scan" placeholder="Code barre de l'étiquette"/>
+                    </group>
+                    <group>
+                        <button name="action_multibind" type="object" string="Bind" class="btn-primary"/>
                     </group>
                 </sheet>
             </form>

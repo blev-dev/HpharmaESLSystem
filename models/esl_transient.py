@@ -88,13 +88,13 @@ class EslBind(models.TransientModel):
                 'title': 'ESL',
                 'message': message,
                 'sticky': True,
+                'timeout': 10000,
             }
         }
     
 class EslUnbind(models.TransientModel):
     _name = 'esl.unbind'
     _description = 'Unbind ESL'
-
     code_1 = fields.Char(string="ESL")
 
     def action_unbind(self):
@@ -135,6 +135,7 @@ class EslUnbind(models.TransientModel):
             }
 
         except Exception as e:
+            { 'type': 'ir.actions.client', 'tag': 'reload',}
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
