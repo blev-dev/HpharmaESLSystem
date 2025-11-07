@@ -94,7 +94,6 @@ class EslTemplate(models.Model):
     def _onchange_esl_id_scan(self):
         self.action_multibind()
 
-    @api.multi
     def action_multibind(self):
         # Recherche d’une configuration ESL existante
         esl_record = self.env['esl.esl'].search([], limit=1)
