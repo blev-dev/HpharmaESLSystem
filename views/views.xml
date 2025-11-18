@@ -32,6 +32,8 @@
                         <field name="unique_id"/>
                     </group>
                     <group string="Configuration ESL">
+                        <field name="merchant_id"/>
+                        <field name="agency_id"/>
                         <field name="doi"/>
                         <field name="labeltype"/>
                         <field name="StoreId"/>
@@ -40,6 +42,7 @@
                         <button type="object" name="importesl" string="import all products" class="btn-info"/>
                         <button type="object" name="getstoreid" string="retrieve store id" class="oe_highlight"/>
                         <button type="object" name="sync_templates_from_esl" string="Sync Templates" class="btn-success"/>
+                        <button type="object" name="download_odoo_log" string="Télécharger odoo.log" class="btn-primary"/>
                     </group>
                     <group string="Planification import automatique">
                         <field name="cron_active"/>

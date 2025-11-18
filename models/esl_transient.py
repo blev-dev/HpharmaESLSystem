@@ -42,7 +42,6 @@ class EslBind(models.TransientModel):
             "esl": self.code_2,
         })
         headers = {
-            'ZKAuthorization': esl_record.zk_token,
             'Authorization': esl_record.token,
             'Content-Type': 'application/json'
         }
@@ -105,7 +104,6 @@ class EslUnbind(models.TransientModel):
             "esl": self.code_1,
         })
         headers = {
-            'ZKAuthorization': esl_record.zk_token,
             'Authorization': esl_record.token,
             'Content-Type': 'application/json'
         }

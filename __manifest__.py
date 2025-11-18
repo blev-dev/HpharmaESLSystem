@@ -31,8 +31,9 @@
     ],
 
     # ✅ Hooks
-    #"post_init_hook": "clear_esl_templates",
-    "uninstall_hook": "clear_esl_templates",
+    #'post_init_hook': 'clear_esl_templates',
+    #'uninstall_hook': 'clear_esl_templates',
+
 
     # ✅ Options du module
     'installable': True,

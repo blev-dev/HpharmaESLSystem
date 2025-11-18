@@ -1,12 +1,16 @@
 from odoo import models, fields, api
-import requests, base64, json, http
+import requests, base64, json, http, os
 from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
+from odoo.tools import config
 # --------------------------
 # Cache global des stores test git
 # --------------------------
+import logging
+_logger = logging.getLogger(__name__)
 _cached_stores_global = []
 
 class Esl(models.Model):
@@ -21,6 +25,8 @@ class Esl(models.Model):
     """
     _name = "esl.esl"
     _description = "Hpharma ESL Connection"
+
+    user_lang = fields.Char("Langue utilisateur", readonly=True)
 
     login = fields.Char("Login", required=True)
     password = fields.Char("Password", required=True)
@@ -43,12 +49,10 @@ class Esl(models.Model):
         ('error', 'Error')
     ], string="Status", default="disconnected")
     unique_id = fields.Char("Unique ID", required=True)
-    agency_id = fields.Char("agency_id")
-    merchant_id = fields.Char("merchant_id")
-    zk_token = fields.Char("zk_token")
+    agency_id = fields.Char("agency_id", readonly=True)
+    merchant_id = fields.Char("merchant_id", readonly=True)
     interval_number = fields.Integer("Intervalle", default=1)
     interval_type = fields.Selection([
-        ('minutes', 'Minutes'),
         ('hours', 'Heures'),
         ('days', 'Jours'),
     ], string="Type d'intervalle", default='hours')
@@ -75,6 +79,7 @@ class Esl(models.Model):
         """
         if self.search_count([]) >= 1:
             raise ValidationError("Une seule instance de connexion est autorisée.")
+        
         record = super().create(vals)
         cron = self.env.ref('module_HpharmaESLSystem.ir_cron_auto_send_products', raise_if_not_found=False)
         if cron:
@@ -95,6 +100,8 @@ class Esl(models.Model):
         Retour:
             bool: succès de la mise à jour
         """
+        vals['user_lang'] = self.env.user.lang
+
         res = super().write(vals)
         if 'interval_number' in vals or 'interval_type' in vals:
             self.update_cron_schedule()
@@ -204,51 +211,25 @@ class Esl(models.Model):
             encrypted = public_key.encrypt(self.password.encode("utf-8"), padding.PKCS1v15())
             encrypted_b64 = base64.b64encode(encrypted).decode("utf-8")
 
-            payload = {"mode": "CLOUD", "username": self.login, "password": encrypted_b64}
+            payload = {"mode": "CLOUD", "username": self.login, "password": encrypted_b64, "UniqueId": self.unique_id , "enableZkong": True}
             response_token = requests.post("https://blev29.kalanda.info/api-esl/getToken", json=payload, timeout=30)
-
+            _logger.info("[Hpharma ESL] Response getToken: %s", response_token.text)
             if response_token.status_code != 200:
                 self.state = "error"
                 return self._notify(f"❌ Erreur token (HTTP {response_token.status_code})")
-
+            
             token_json = response_token.json()
-            self.token = self.token = token_json.get("data", {}).get("token", "")
-
-            if not self.token:
-                self.state = "error"
-                return self._notify("❌ Token non reçu dans la réponse.")
+            self.token = token_json.get("data", {}).get("token", "")
+            self.agency_id = token_json.get("data", {}).get("agencyId", "NA")
+            self.merchant_id = token_json.get("data", {}).get("merchantId", "NA")
 
         except Exception as e:
             self.state = "error"
-            return self._notify(f"❌ Exception token : {str(e)}")
-
-        # Étape 3 : PostConnexion
-        try:
-            conn_payload = {"uniqueId": self.unique_id}
-            logs.append("Connexion PostConnexion lancée ✅")
-
-            headers = {"Content-Type": "application/json"}
-            if self.token:
-                headers["Authorization"] = self.token
-
-            conn_response = requests.post(
-                "https://blev29.kalanda.info/api-esl/ZK_getToken",
-                json=conn_payload,
-                headers=headers,
-                timeout=10
-            )
-            conn_response.raise_for_status()
-            conn_data = conn_response.json().get("data", {})
-
-            self.agency_id = conn_data.get("currentUser", {}).get("agencyId", "NA")
-            self.merchant_id = conn_data.get("currentUser", {}).get("merchantId", "NA")
-            self.zk_token = conn_data.get("token", "")
-
-        except Exception as e:
-            self.state = "error"
-            return self._notify(f"❌ Erreur PostConnexion : {str(e)}")
+            _logger.error("[Hpharma ESL] Erreur getToken: %s", str(e))
+            return self._notify(f"❌ Erreur getToken : {str(e)}")
 
         self.state = "connected"
+        _logger.info("[Hpharma ESL] Connexion ESL réussie pour %s", self.login)
         return self._notify("✅ Connexion ESL Hpharma réussie.")
 
     # -------------------------------------------------------------
@@ -282,13 +263,11 @@ class Esl(models.Model):
                 "agencyId": self.agency_id,
                 "merchantId": self.merchant_id,
                 "itemList": batch_items,
-                "zk": self.zk_token,
                 "token": self.token
             }
             payload = json.dumps(payload_dict)
 
             headers = {
-                'ZKAuthorization': self.zk_token,
                 'Authorization': self.token,
                 'Content-Type': 'application/json'
             }
@@ -302,18 +281,22 @@ class Esl(models.Model):
                 try:
                     response_json = json.loads(response_data)
                 except Exception:
+                    _logger.error("[Hpharma ESL] Erreur parsing JSON response: %s", response_data)
                     response_json = {}
-
+                _logger.info("[Hpharma ESL] Response sendItem: %s", response_data)
                 if res.status == 200:
                     self.state = "connected"
                     self.doi = fields.Datetime.now()
+                    _logger.info("[Hpharma ESL] Batch de %d produits envoyé avec succès.", len(batch_items))
                 else:
                     self.state = "error"
+                    _logger.error("[Hpharma ESL] Erreur API sendItem (HTTP %d): %s", res.status, response_data)
 
             except Exception as e:
                 self.state = "error"
                 response_data = str(e)
                 response_json = {}
+                _logger.error("[Hpharma ESL] Exception envoi produits: %s", response_data)
 
             total_sent += len(batch_items)
 
@@ -322,7 +305,6 @@ class Esl(models.Model):
             safe_payload_dict["token"] = "****"
             safe_payload_dict["zk"] = "****"
             logs.append(json.dumps(safe_payload_dict, indent=4, ensure_ascii=False))
-
         return self._notify(
             f"✅ Produits envoyés : {total_sent}\n"
             f"Réponse : {response_json.get('message', response_data)}"
@@ -343,7 +325,6 @@ class Esl(models.Model):
         })
 
         headers = {
-            'ZKAuthorization': self.zk_token or "",
             'Authorization': self.token or "",
             'Content-Type': 'application/json'
         }
@@ -353,6 +334,7 @@ class Esl(models.Model):
             conn.request("POST", "/api-esl/ZK_getStoreId", payload, headers)
             res = conn.getresponse()
             response_data = res.read().decode("utf-8")
+            _logger.info("[Hpharma ESL] Response getStoreId: %s", response_data)
             if res.status != 200:
                 return self._notify(f"Erreur API : {response_data}")
 
@@ -388,12 +370,16 @@ class Esl(models.Model):
     #                  CRON & NOTIFICATIONS
     # -------------------------------------------------------------
     def auto_send_products(self):
+        _logger.info("[Hpharma ESL] Démarrage du CRON d'envoi automatique des produits.")
         for record in self.search([]):
             try:
+                lang = record.user_lang or 'fr_BE'
+                record = record.with_context(lang=lang)
                 record.connectesl()
                 record.importesl()
             except Exception as e:
                 record.state = "error"
+                _logger.error("[Hpharma ESL] Erreur CRON envoi automatique: %s", str(e))
                 record._notify(f"Erreur CRON envoi automatique : {str(e)}")
 
     def _notify(self, message):
@@ -457,8 +443,10 @@ class Esl(models.Model):
             dict: notification Odoo du résultat de la synchronisation
         """
         # Récupère les templates via API pour cet ESL et crée/maj les enregistrements. #
+
         self = esl_record or self
         if not self.unique_id or not self.merchant_id:
+            _logger.error("[Hpharma ESL] unique_id ou merchant_id manquants pour récupérer les templates.")
             return self._notify("❌ unique_id ou merchant_id manquants pour récupérer les templates")
 
         payload = {
@@ -468,7 +456,6 @@ class Esl(models.Model):
             "data": {"storeId": self.StoreId, "HardwareType": 3}
         }
         headers = {
-            "ZKAuthorization": self.zk_token or "",
             "Authorization": self.token or "",
             "Content-Type": "application/json",
         }
@@ -481,18 +468,22 @@ class Esl(models.Model):
                 timeout=30
             )
             resp.raise_for_status()
+            _logger.info("[Hpharma ESL] Requête templates réussie: %s", resp.text)
         except Exception as e:
+            _logger.error("[Hpharma ESL] Erreur requête templates: %s", str(e))
             return self._notify(f"❌ Erreur requête templates: {e}")
 
 
         try:
             data = resp.json()
         except Exception as e:
+            _logger.error("[Hpharma ESL] Réponse templates non JSON: %s", str(e))
             return self._notify(f"❌ Réponse templates non JSON: {e}")
 
         # Correction: gérer le cas où la réponse est une liste ou un dict, avec log
         logs = []
         logs.append(f"Type de data reçu: {type(data)}")
+        _logger.info("[Hpharma ESL] Type de data reçu pour templates: %s", type(data))
         if isinstance(data, list):
             content = data
         elif isinstance(data, dict):
@@ -508,13 +499,14 @@ class Esl(models.Model):
         else:
             content = []
         if not content:
-            logs.append(f"Contenu vide ou non trouvé. data: {data}")
+            _logger.error(f"Contenu vide ou non trouvé. data: {data}")
             return self._notify("⚠️ Pas de template reçu.")
 
         Template = self.env['esl.template'].sudo()
         created = updated = 0
 
         for tmpl in content:
+            _logger.debug("[Hpharma ESL] Traitement template: %s", tmpl)
             esl_id = str(tmpl.get("id") or tmpl.get("templateNumber") or "")
             # Conversion correcte en booléen
             is_enable_value = tmpl.get("isEnable", False)
@@ -534,8 +526,9 @@ class Esl(models.Model):
                 "temp_pic_url": tmpl.get("tempPicUrl"),
                 "is_enable": is_enable_value,
                 "json_raw": json.dumps(tmpl, ensure_ascii=False),
+                "json_product_codes": json.dumps([""] * (tmpl.get("itemNum") or 0)),
             }
-
+            _logger.debug("[Hpharma ESL] Traitement template ESL ID %s, is_enable: %s", esl_id, is_enable_value)
             existing = Template.search([("esl_id", "=", esl_id)], limit=1)
             if not is_enable_value:
                 # Si désactivé, supprimer si existe
@@ -544,6 +537,7 @@ class Esl(models.Model):
                     updated += 1
                 continue
             # Si activé, créer ou mettre à jour
+            _logger.debug("[Hpharma ESL] Création/Mise à jour template ESL ID %s", esl_id)
             if existing:
                 existing.write(vals)
                 updated += 1
@@ -563,3 +557,35 @@ class Esl(models.Model):
             except Exception as e:
                 record.state = "error"
                 record._notify(f"Erreur Connexion : {str(e)}")
+                _logger.error("[Hpharma ESL] Erreur FirstConnectionESL: %s", str(e))
+
+    def download_odoo_log(self):
+        # Chemin du fichier log depuis la configuration active
+        log_path = config['logfile']  # récupère directement depuis Odoo
+
+        if not log_path:
+            raise UserError("Le fichier odoo.log n'est pas configuré dans Odoo (`logfile`).")
+
+        if not os.path.exists(log_path):
+            raise UserError(f"Le fichier odoo.log est introuvable à : {log_path}")
+
+        # Lire le contenu
+        with open(log_path, 'rb') as f:
+            log_data = f.read()
+
+        # Créer un attachment temporaire
+        attachment = self.env['ir.attachment'].create({
+            'name': 'odoo.log',
+            'type': 'binary',
+            'datas': base64.b64encode(log_data),
+            'mimetype': 'text/plain',
+            'res_model': self._name,
+            'res_id': self.id or 0,
+        })
+
+        # Action de téléchargement
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f"/web/content/{attachment.id}?download=true",
+            'target': 'self',
+        }

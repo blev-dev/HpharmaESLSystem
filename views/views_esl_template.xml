@@ -36,8 +36,8 @@
                     </group>
 
                     <group string="Produits scannés">
-                        <field name="Json_product_codes" widget="text"/>
-                        <field name="product_names_scanned" readonly="1" widget="text"/>
+                        <field name="json_product_codes" widget="text" invisible="1"/>
+                        <field name="product_names_scanned" widget="text" force_save="1"/>
                     </group>
                     <group string="Binding multi produit">
                         <field name="scan_input" placeholder="Code barre du produit"/>

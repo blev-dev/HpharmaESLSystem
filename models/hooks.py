@@ -3,8 +3,9 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-def clear_esl_templates(cr, registry):
-    """Vide la table esl.template à chaque installation/mise à jour du module."""
+def clear_esl_templates(env):
+    """Vide la table esl_template lors de la désinstallation du module."""
+    cr = env.cr
     try:
         cr.execute("DELETE FROM esl_template")
         _logger.info("✅ [Hpharma ESL] Table esl_template vidée avec succès.")
