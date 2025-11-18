@@ -5,7 +5,7 @@ import json, http
 class EslBind(models.TransientModel):
     _name = 'esl.bind'
     _description = 'Bind ESL'
-
+    name = fields.Char(default="Bind ESL")
     code_1 = fields.Char(string="Produit")
     code_2 = fields.Char(string="ESL")
     product_name = fields.Char(string="Nom du produit", readonly=True)
@@ -94,6 +94,7 @@ class EslBind(models.TransientModel):
 class EslUnbind(models.TransientModel):
     _name = 'esl.unbind'
     _description = 'Unbind ESL'
+    name = fields.Char(default="Unbind ESL")
     code_1 = fields.Char(string="ESL")
 
     def action_unbind(self):

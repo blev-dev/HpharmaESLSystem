@@ -25,7 +25,7 @@ class Esl(models.Model):
     """
     _name = "esl.esl"
     _description = "Hpharma ESL Connection"
-
+    name = fields.Char(default="Paramètres ESL")
     user_lang = fields.Char("Langue utilisateur", readonly=True)
 
     login = fields.Char("Login", required=True)
