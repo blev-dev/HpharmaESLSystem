@@ -6,6 +6,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from odoo.tools import config
+from datetime import timedelta
 # --------------------------
 # Cache global des stores test git
 # --------------------------
@@ -31,6 +32,7 @@ class Esl(models.Model):
     login = fields.Char("Login", required=True)
     password = fields.Char("Password", required=True)
     token = fields.Char("Token")
+    token_expiration = fields.Datetime("Token Expiration", readonly=True)
     publickey = fields.Text("Public Key")
     doi = fields.Datetime("Date of last import", readonly=True, default=lambda self: fields.Datetime.now())
     labeltype = fields.Selection(
@@ -170,6 +172,23 @@ class Esl(models.Model):
             "merchantId": self.merchant_id,
             "itemList": item_list
         }
+    
+    # -------------------------------------------------------------
+    #               GESTION ET RAFRAÎCHHISSEMENT TOKEN
+    # -------------------------------------------------------------
+    def check_and_refresh_token(self):
+        now = fields.Datetime.now()
+        # Si pas de token ou pas d'expiration → on reconnecte
+        if not self.api_token or not self.token_expiration:
+            self.connectesl()
+            _logger.info("[Hpharma ESL] Token absent, connexion effectuée.")
+            return self.api_token
+
+        # Token expiré ?
+        if self.token_expiration < now:
+            _logger.info("[Hpharma ESL] Token expiré, reconnexion en cours.")
+            return self.connectesl()
+
 
     # -------------------------------------------------------------
     #                      CONNEXION ESL
@@ -222,6 +241,7 @@ class Esl(models.Model):
             self.token = token_json.get("data", {}).get("token", "")
             self.agency_id = token_json.get("data", {}).get("agencyId", "NA")
             self.merchant_id = token_json.get("data", {}).get("merchantId", "NA")
+            self.token_expiration = fields.Datetime.now() + timedelta(hours=2)
 
         except Exception as e:
             self.state = "error"
@@ -360,7 +380,9 @@ class Esl(models.Model):
         except Exception as e:
             return self._notify(f"❌ Erreur lors de la récupération : {e}")
 
-
+    # -------------------------------------------------------------
+    #                 OUTILS DE SÉLECTION STORE
+    # -------------------------------------------------------------
     def _get_store_selection(self):
         """Retourne la liste des stores stockés globalement."""
         global _cached_stores_global
@@ -381,7 +403,9 @@ class Esl(models.Model):
                 record.state = "error"
                 _logger.error("[Hpharma ESL] Erreur CRON envoi automatique: %s", str(e))
                 record._notify(f"Erreur CRON envoi automatique : {str(e)}")
-
+    # -------------------------------------------------------------
+    #                      NOTIFICATIONS
+    # -------------------------------------------------------------
     def _notify(self, message):
         """
         Retourne un dictionnaire pour afficher une notification dans Odoo.
@@ -402,7 +426,9 @@ class Esl(models.Model):
                 'timeout': 10000, 
             }
         }
-
+    # -------------------------------------------------------------
+    #                  GESTION DU CRON
+    # -------------------------------------------------------------
     def action_update_cron(self):
         self.ensure_one()
         cron = self.env.ref('module_HpharmaESLSystem.ir_cron_auto_send_products', raise_if_not_found=False)
@@ -416,7 +442,9 @@ class Esl(models.Model):
         else:
             message = "⚠️ CRON non trouvé"
         return self._notify(message)
-
+    # -------------------------------------------------------------
+    #                  MISE À JOUR DU CRON
+    # -------------------------------------------------------------
     def update_cron_schedule(self):
         self.ensure_one()
         cron = self.env.ref('module_HpharmaESLSystem.ir_cron_auto_send_products', raise_if_not_found=False)
@@ -426,8 +454,6 @@ class Esl(models.Model):
                 'interval_type': self.interval_type if self.interval_type in ['minutes', 'hours', 'days'] else 'hours',
                 'active': self.cron_active,
             })
-
-
     # -----------------------------------------------------------------
     #                      SYNCHRONISATION TEMPLATE ESL
     # -----------------------------------------------------------------
@@ -547,6 +573,9 @@ class Esl(models.Model):
 
         return self._notify(f"Templates synchronisés ✅ Créés: {created} — Mis à jour: {updated}")
 
+    # -------------------------------------------------------------
+    #                      OUTILS DIVERS        
+    # -------------------------------------------------------------
     def FirstConnectionESL(self):
         for record in self.search([]):
             try:
@@ -558,7 +587,9 @@ class Esl(models.Model):
                 record.state = "error"
                 record._notify(f"Erreur Connexion : {str(e)}")
                 _logger.error("[Hpharma ESL] Erreur FirstConnectionESL: %s", str(e))
-
+    # -------------------------------------------------------------
+    #               TÉLÉCHARGEMENT LOG ODOO
+    # -------------------------------------------------------------
     def download_odoo_log(self):
         # Chemin du fichier log depuis la configuration active
         log_path = config['logfile']  # récupère directement depuis Odoo

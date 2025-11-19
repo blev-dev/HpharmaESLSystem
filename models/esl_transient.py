@@ -27,14 +27,15 @@ class EslBind(models.TransientModel):
     
     @api.onchange('code_2')
     def _onchange_code_2(self):
-        self.action_bind()
+        if self.code_2 and self.code_2.strip():
+                self.action_bind()
 
     def action_bind(self):
         esl_record = self.env['esl.esl'].search([], limit=1)
         if not esl_record:
             { 'type': 'ir.actions.client', 'tag': 'reload',} # reload pour rafraîchir l'interface
             return self._notify("Aucune instance ESL trouvée.")
-
+        esl_record.check_and_refresh_token()
         payload = json.dumps({
             "uniqueId": esl_record.unique_id,
             "StoreId": esl_record.StoreId,
@@ -99,6 +100,7 @@ class EslUnbind(models.TransientModel):
 
     def action_unbind(self):
         esl_record = self.env['esl.esl'].search([], limit=1)
+        esl_record.check_and_refresh_token()
         payload = json.dumps({
             "uniqueId": esl_record.unique_id,
             "StoreId": esl_record.StoreId,
@@ -118,6 +120,7 @@ class EslUnbind(models.TransientModel):
             if res.status != 200:
                 raise Exception(f"Erreur API : {response_data}")
 
+            self.code_1 = False
             new_wizard = self.env['esl.unbind'].create({})
             { 'type': 'ir.actions.client', 'tag': 'reload',}
             return {
@@ -148,7 +151,8 @@ class EslUnbind(models.TransientModel):
     
     @api.onchange('code_1')
     def _onchange_code_1(self):
-        self.action_unbind()
+        if self.code_2 and self.code_1.strip():
+            self.action_unbind()
 
     def _notify(self, message):
         return {

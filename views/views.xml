@@ -32,8 +32,6 @@
                         <field name="unique_id"/>
                     </group>
                     <group string="Configuration ESL">
-                        <field name="merchant_id"/>
-                        <field name="agency_id"/>
                         <field name="doi"/>
                         <field name="labeltype"/>
                         <field name="StoreId"/>

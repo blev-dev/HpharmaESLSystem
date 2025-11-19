@@ -113,7 +113,7 @@ class EslTemplate(models.Model):
         esl_record = self.env['esl.esl'].search([], limit=1)
         if not esl_record:
             return self._notify("❌ Aucune instance ESL trouvée.", notif_type="warning")
-
+        esl_record.check_and_refresh_token()
         try:
             products = json.loads(self.json_product_codes or "[]")
             products = [p.strip() for p in products if p and p.strip()]
@@ -152,12 +152,12 @@ class EslTemplate(models.Model):
                 _logger.info("[Hpharma ESL] Liaison multiple ESL réussie : %s", response_data)
                 
 
-            # ✅ Reset des champs après succès
-            #self.json_product_codes = json.dumps([""] * len(products))
-            #self.product_names_scanned = ""
-            #self.esl_id_scan = ""
+            #  Reset des champs après succès
+            self.json_product_codes = json_product_codes = json.dumps([""] * self.item_num) 
+            self.product_names_scanned = ""
+            self.esl_id_scan = ""
 
-            # 🔄 Reload de la page avec notification
+            #  Reload de la page avec notification
             return {
                 'type': 'ir.actions.client',
                 'tag': 'reload',  # force le reload du formulaire / vue
