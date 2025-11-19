@@ -10,7 +10,8 @@
             <form string="Bind ESL" create="false" delete="false" edit="false" header="False" options="{'no_open': True}">
                 <sheet>
                     <group>
-                         <field name="code_1" placeholder="Entrer le produit"/>
+                        <field name="code_1" widget="barcode" placeholder="Scannez le code"/>
+                         <!--- <field name="code_1" placeholder="Entrer le produit"/> -->
                         <field name="product_name" readonly="1"/>
                         <field name="product_image" widget="image" readonly="1" options="{'preview_image': '/web/image/product.product/1/image_128'}"/>
                         <field name="code_2" placeholder="Code barre de l'étiquette"/>

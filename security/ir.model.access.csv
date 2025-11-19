@@ -1,5 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_esl_esl_all,access_esl_esl_all,model_esl_esl,,1,1,1,1
-access_esl_template_all,access_esl_template_all,model_esl_template,,1,1,1,1
-access_esl_bind_all,access_esl_bind_all,model_esl_bind,,1,1,1,1
-access_esl_unbind_all,access_esl_unbind_all,model_esl_unbind,,1,1,1,1
+access_esl_esl_all,access_esl_esl_all,model_esl_esl,base.group_user,1,1,1,1
+access_esl_template_all,access_esl_template_all,model_esl_template,base.group_user,1,1,1,1
+access_esl_bind_all,access_esl_bind_all,model_esl_bind,base.group_user,1,1,1,1
+access_esl_unbind_all,access_esl_unbind_all,model_esl_unbind,base.group_user,1,1,1,1

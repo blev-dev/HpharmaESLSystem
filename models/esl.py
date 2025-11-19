@@ -69,16 +69,19 @@ class Esl(models.Model):
 
     @api.model
     def create(self, vals):
-        """
-        Surcharge de la création d'un ESL.
-        Vérifie qu'il n'existe qu'une seule instance et configure le cron.
+        # Si vals est une liste (création multiple depuis XML), itérer dessus
+        if isinstance(vals, list):
+            records = super().create(vals)
+            for val in vals:
+                cron = self.env.ref('module_HpharmaESLSystem.ir_cron_auto_send_products', raise_if_not_found=False)
+                if cron:
+                    cron.write({
+                        'interval_number': val.get('interval_number', 1),
+                        'interval_type': val.get('interval_type', 'hours'),
+                    })
+            return records
 
-        Paramètres:
-            vals (dict): valeurs du nouvel enregistrement
-
-        Retour:
-            record (recordset): l'enregistrement créé
-        """
+        # Sinon, création simple
         if self.search_count([]) >= 1:
             raise ValidationError("Une seule instance de connexion est autorisée.")
         
@@ -90,6 +93,7 @@ class Esl(models.Model):
                 'interval_type': vals.get('interval_type', 'hours'),
             })
         return record
+
 
     def write(self, vals):
         """
@@ -179,10 +183,10 @@ class Esl(models.Model):
     def check_and_refresh_token(self):
         now = fields.Datetime.now()
         # Si pas de token ou pas d'expiration → on reconnecte
-        if not self.api_token or not self.token_expiration:
+        if not self.token or not self.token_expiration:
             self.connectesl()
             _logger.info("[Hpharma ESL] Token absent, connexion effectuée.")
-            return self.api_token
+            return self.token
 
         # Token expiré ?
         if self.token_expiration < now:

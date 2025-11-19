@@ -21,14 +21,14 @@
 
     # ✅ Données XML, CSV, etc.
     'data' : [
-        "security/ir.model.access.csv",
-        'data/esl_data.xml',
         'views/views.xml',
         'views/views_bind_unbind.xml',
         'views/views_esl_template.xml',
         'views/views_menu.xml',
         'data/ir_cron.xml',
-    ],
+        'data/esl_data.xml',
+        'security/ir.model.access.csv',
+   ],
 
     # ✅ Hooks
     #'post_init_hook': 'clear_esl_templates',

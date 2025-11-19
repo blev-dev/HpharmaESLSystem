@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
 import json, http
+import logging
+_logger = logging.getLogger(__name__)
+_cached_stores_global = []
 
 class EslBind(models.TransientModel):
     _name = 'esl.bind'
@@ -53,8 +56,9 @@ class EslBind(models.TransientModel):
             conn.request("POST", "/api-esl/ZK_bindSingleESL", payload, headers)
             res = conn.getresponse()
             response_data = res.read().decode("utf-8")
-
+            _logger.info(f"Response Bind: {response_data}")
             if res.status != 200:
+                { 'type': 'ir.actions.client', 'tag': 'reload',}
                 raise Exception(f"Erreur API : {response_data}")
 
             new_wizard = self.env['esl.bind'].create({})
@@ -116,8 +120,9 @@ class EslUnbind(models.TransientModel):
             conn.request("POST", "/api-esl/ZK_unbindESL", payload, headers)
             res = conn.getresponse()
             response_data = res.read().decode("utf-8")
-
+            _logger.info(f"Response Unbind: {response_data}")
             if res.status != 200:
+                _logger.error(f"Erreur API Unbind: {response_data}")
                 raise Exception(f"Erreur API : {response_data}")
 
             self.code_1 = False
@@ -151,7 +156,7 @@ class EslUnbind(models.TransientModel):
     
     @api.onchange('code_1')
     def _onchange_code_1(self):
-        if self.code_2 and self.code_1.strip():
+        if self.code_1 and self.code_1.strip():
             self.action_unbind()
 
     def _notify(self, message):
